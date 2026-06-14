@@ -6,23 +6,23 @@ nav_order: 60
 
 ## {{ page.title }}
 
-The MDI takes security seriously. There are real 
+RudI takes security seriously. There are real 
 concerns with running software on your computer,
-and you should carefully consider the factors below 
-when installing and using the MDI Desktop and associated apps.
+and you should consider the factors below 
+when installing and using the RudI Desktop and associated apps.
 
 Only you can decide whether to trust the software you install
-and use, and you bear all responsibility for doing so.
+and bear responsibility for doing so.
 
-### MDI Desktop
+### RuDI Desktop
 
-The MDI Desktop is an 
-{% include external-link.html href="https://github.com/MiDataInt/mdi-desktop-app/" text="open-source project" %}
-maintained by the MDI team to allow you to review its code,
+The RuDI Desktop is an 
+{% include external-link.html href="https://github.com/RustyDataInt/rudi-desktop-app/" text="open-source project" %}
+maintained by the RuDI team to allow you to review its code,
 and we always abide by our 
-[Code of Conduct](https://midataint.github.io/docs/code-of-conduct/).
+[Code of Conduct](https://rustydataint.github.io/docs/code-of-conduct/).
 
-The Desktop app code is 
+The Desktop app is 
 {% include external-link.html href="https://www.google.com/search?q=code+signing" text="properly signed" %},
 and, on macOS, 
 {% include external-link.html href="https://www.google.com/search?q=notarization+macos" text="notarized" %},
@@ -34,54 +34,37 @@ app author or publisher is "University of Michigan" on Windows and
 You may still be prompted to confirm certain installation actions,
 e.g., that the app is not "frequently downloaded" or "not recognized".
 These messages occur when an app has fewer users as compared
-to very common programs; they do _not_ indicate that malware was detected. 
+to more common programs; they do _not_ indicate that malware was detected. 
 
 The Desktop performs the following essential tasks:
 - sets configuration parameters and saves them using Local Storage
 - uses SSH to securely connect to remote servers
-- uses {% include external-link.html href="https://cran.r-project.org/" text="R" %} to install packages from GitHub on your local or remote computer
-- uses {% include external-link.html href="https://shiny.rstudio.com/" text="R Shiny" %} to run web applications in the app's browser
 
-The app has one action (opening a new Terminal) that loads an external 
-window on your system. You will be prompted to confirm your agreement 
-the first time you access it. 
+### RuDI Apps Framework
 
-### MDI Apps Framework
-
-Like the Desktop, the MDI Apps Framework is an 
-{% include external-link.html href="https://github.com/MiDataInt/mdi-apps-framework/" text="open-source project" %}
-that runs an
-{% include external-link.html href="https://shiny.rstudio.com/" text="R Shiny" %} app.
-
-The framework has features that access your local file system
+Like the Desktop, the RuDI Apps Framework is an 
+{% include external-link.html href="https://github.com/RustyDataInt/rudi-apps-framework/" text="open-source project" %}.
+It has features that access your local file system
 and execute actions on your computer to allow you to:
+- download third party app binaries and run them on your computer or server
 - load and save data files and bookmarks of app states
-- run resource intensive data analyses
-- if desired, edit code files and execute system commands that you write
-- load and execute third-party apps
 
 ### Third-party data analysis apps
 
-The purpose of the MDI Desktop and Apps Framework
+The purpose of the RuDI Desktop and Apps Framework
 is to run data analysis apps. Unlike the
-Desktop and Framework, the MDI team does not develop
+Desktop and Framework, our team does not develop
 those apps and is not responsible for their contents.
 
-MDI apps run in 
-{% include external-link.html href="https://cran.r-project.org/" text="R" %}, 
-which means that they have access to the computer running the web server. 
-Apps can open files and run commands on the operating system. 
-It is therefore essential that you trust the authors of any apps you use.
+RuDI apps have access to the computer running the web server, including 
+opening files and running commands on the operating system. 
+It is therefore essential that you trust the authors of apps you use.
 
-Apps you trust should follow the MDI 
-[Code of Conduct](https://midataint.github.io/docs/code-of-conduct/).
+Apps you trust should follow the RuDI 
+[Code of Conduct](https://rustydataint.github.io/docs/code-of-conduct/).
 Ask the app's developer if you are in doubt. 
 If you cannot identify the developer of an app, don't use it!
 
 You will be prompted the first time you use an app
 to indicate that you have considered the potential risks and 
 agree to continue.
-
-In addition, the framework scans all apps
-for an intent to execute code on the operating system. 
-If detected, you will be prompted to allow the app to load.

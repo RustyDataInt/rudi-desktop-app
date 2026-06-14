@@ -38,7 +38,7 @@ and prevents you from unwittingly launching a server that runs perpetually.
 The integer number of CPUs you would like assigned
 to your web server job. 
 
-Only 1 CPU is required to run the MDI web server, but you may wish 
+Only 1 CPU is required to run the RuDI web server, but you may wish 
 to request 2 CPUs if you will be performing asynchronous tasks. 
 Only rare users need to request more than 2 CPUs.
 

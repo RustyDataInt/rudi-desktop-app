@@ -1,10 +1,10 @@
 {
-  "name": "mdi-desktop-app",
-  "version": "v0.2.4",
-  "description": "Electron desktop for the Michigan Data Interface apps framework",
+  "name": "rudi-desktop-app",
+  "version": "v0.3.0",
+  "description": "Electron desktop for Rusty Data Interface (RuDI) apps",
   "main": "main.js",
   "scripts": {
-    "dev": "electron . MDI_DEV_TOOLS",
+    "dev": "electron . RUDI_DEV_TOOLS",
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
@@ -29,18 +29,18 @@
     "node-gyp": "^12.2.0"
   },
   "build": {
-    "appId": "MichiganDataInterface.DesktopApp",
-    "productName": "MDI Desktop",
+    "appId": "RustyDataInterface.DesktopApp",
+    "productName": "RuDI Desktop",
     "afterSign": "electron-builder-notarize",
     "win": {
       "publish": "github",
       "artifactName": "${name}-Setup.${ext}",
-      "icon": "./assets/logo/mdi-logo_256x256px.png"
+      "icon": "./assets/logo/rudi-logo_256x256px.png"
     },
     "mac": {
       "publish": "github",
       "artifactName": "${name}.${ext}",
-      "icon": "./assets/logo/mdi-logo_512x512px.png",
+      "icon": "./assets/logo/rudi-logo_512x512px.png",
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,

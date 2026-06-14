@@ -8,13 +8,13 @@ nav_order: 20
 
 ## {{page.title}}
 
-The MDI apps server can be launched on different computers
+RuDI backend servers can be launched on different computers
 depending on your needs. In all cases, you will access the data
 analysis apps via a web browser embedded into the Desktop.
 
 ### Local computer mode 
 
-`Local Computer` mode uses R to install the web server
+`Local Computer` runs the backend web server
 on your desktop or laptop, so that the web browser and web
 server run on the same local computer.
 
@@ -27,18 +27,18 @@ server run on the same local computer.
     <div class="diagramArrow">&harr;</div>
     <div class="entityBox inlineBox">
         <p class='entityBoxLabel'>Web Server</p>
-        <p>performs computations</p>
+        <p>serves data</p>
     </div>
 </div>
 
 Local mode is responsive and secure, but you must manually transfer 
-processed data files to your computer.
+processed data files from pipelines to your computer.
 
 ### Remote server mode 
 
 A `Remote Server` runs on a 
 remote computer on its login host, either a high performance computing (HPC) 
-resource or a server dedicated to running the MDI. 
+resource or a server dedicated to running the RuDI backend. 
 The local computer connects to the server via a secure SSH tunnel.
 
 <div class="entityBox outerBox">
@@ -63,9 +63,9 @@ The local computer connects to the server via a secure SSH tunnel.
 </div>
 
 In Remote mode, you can use the Pipeline Runner to
-execute Stage 1 Pipelines and then analyze their output using Stage 2 Apps on the same server. 
+execute HPC pipelines and then analyze their output using apps running on the same server. 
 For users with an HPC solution accessible by SSH, the slightly more complex configuration is 
-an excellent trade-off for the added capabilities when running the MDI remotely.
+an excellent trade-off for the added capabilities when running RuDI remotely.
 
 ### Cluster Node Mode 
 
@@ -102,7 +102,7 @@ from the local computer to the cluster node, again using SSH.
         <p class='entityBoxLabel'>Cluster Node</p>
         <div class="entityBox inlineBox">
             <p class='entityBoxLabel'>Web Server</p>
-            <p>performs computations</p>
+            <p>serves data</p>
         </div>
     </div>
 </div>

@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------
 renderer.js has no access to Node or local system except through preload-main.js contextBridge
 ----------------------------------------------------------- */
-mdi.autoUpdateStatus((event, message) => console.log);
+rudi.autoUpdateStatus((event, message) => console.log);
 
 /* -----------------------------------------------------------
 initialize the xterm terminal window and associated events and data flow
@@ -21,9 +21,9 @@ const xterm = new Terminal({
     cursorWidth: 2
 });
 xterm.open(terminalDiv);
-xterm.onResize((size) => mdi.ptyResize(size));
-xterm.onData((data) => mdi.xtermToPty(data));
-mdi.ptyToXterm((event, data) => { xterm.write(data) });
+xterm.onResize((size) => rudi.ptyResize(size));
+xterm.onData((data) => rudi.xtermToPty(data));
+rudi.ptyToXterm((event, data) => { xterm.write(data) });
 let xtermSelected = ""; // enable a dynamic prompt for user to copy selected text from the terminal
 xterm.onSelectionChange(() => {
     xtermSelected = xterm.getSelection();
@@ -46,7 +46,7 @@ const toggleButtonWidth = 20 + 2 * 1; // set in css
 let serverPanelWorkingWidth = serverPanelWidth;
 const resizePanelWidths = function(skipIpc){ // control the horizontal display, for hiding serverPanel under contentView 
     const x = serverPanelWorkingWidth + toggleButtonWidth - 2;
-    if(!skipIpc) mdi.resizePanelWidths(window.innerHeight, window.innerWidth, serverPanelWorkingWidth);
+    if(!skipIpc) rudi.resizePanelWidths(window.innerHeight, window.innerWidth, serverPanelWorkingWidth);
     toggleButton.style.left = serverPanelWorkingWidth + "px";
     tabControls.style.left = x + "px";
     tabControls.style.width = (window.innerWidth - x + 1) + "px";
@@ -96,7 +96,7 @@ toggleButton.addEventListener('click', function(event) {
 });
 
 /* -----------------------------------------------------------
-activate the MDI apps server action buttons
+activate the apps server action buttons
 ----------------------------------------------------------- */
 const sshConnectButton    = document.getElementById('ssh-connect');
 const sshDisconnectButton = document.getElementById('ssh-disconnect');
@@ -107,7 +107,7 @@ const spawnTerminalButton = document.getElementById('spawn-terminal');
 const buttonsHr = document.getElementById('buttons-hr');
 let serverState = {
     connected: false, // whether an ssh connection has been established
-    listening: false, // whether the mdi-apps-framework is running
+    listening: false, // whether the apps framework is running
     nButtons: 0
 };
 const setButtonVisibility = function(button, isVisible){
@@ -121,7 +121,7 @@ const setButtonsVisibility = function(){
     const isLocal = config.mode == "Local";
     const isConnected = isLocal || serverState.connected;
     const sshIsReady = checkActionReadiness("ssh", true).success;
-    const installIsReady = checkActionReadiness("mdi", "install").success;
+    const installIsReady = checkActionReadiness("rudi", "install").success;
     const runIsReady = checkActionReadiness("ssh", "run").success;
     const terminalIsReady = checkActionReadiness("ssh", false).success;
     serverState.nButtons = 0;
@@ -148,7 +148,7 @@ const sshRequiredOptions = function(config, createTunnel){
         advanced:{ }
     }    
 };
-const mdiRequiredOptions = function(config, action){
+const rudiRequiredOptions = function(config, action){
     const isInstall = action === "install";    
     const isLocal = config.mode === "Local";
     const isNode  = config.mode === "Node";
@@ -158,8 +158,8 @@ const mdiRequiredOptions = function(config, action){
             serverDomain: !isInstall && !isLocal,
             clusterAccount: isNodeRun,
             jobTimeMinutes: isNodeRun,
-            mdiDirectoryRemote: !isLocal,
-            mdiDirectoryLocal: isLocal
+            rudiDirectoryRemote: !isLocal,
+            rudiDirectoryLocal: isLocal
         },
         advanced: {                 
             cpusPerTask: isNodeRun,
@@ -169,7 +169,7 @@ const mdiRequiredOptions = function(config, action){
 }
 checkActionReadiness = function(commandType, extra){
     const config = presets[presetSelect.value];
-    const requiredOptions = commandType == "ssh" ? sshRequiredOptions(config, extra) : mdiRequiredOptions(config, extra);
+    const requiredOptions = commandType == "ssh" ? sshRequiredOptions(config, extra) : rudiRequiredOptions(config, extra);
     for(optionType of ["regular", "advanced"]){
         for(option of Object.keys(requiredOptions[optionType])){
             if(!requiredOptions[optionType][option]) continue;
@@ -181,12 +181,12 @@ checkActionReadiness = function(commandType, extra){
 const getConfig = function(commandType, extra){
     const check = checkActionReadiness(commandType, extra);
     if(check.success) {
-        const tail ='/mdi';
-        remoteDir = check.config.options.regular.mdiDirectoryRemote;
-        if(remoteDir && !remoteDir.endsWith(tail)) check.config.options.regular.mdiDirectoryRemote = remoteDir + tail; 
+        const tail ='/rudi';
+        remoteDir = check.config.options.regular.rudiDirectoryRemote;
+        if(remoteDir && !remoteDir.endsWith(tail)) check.config.options.regular.rudiDirectoryRemote = remoteDir + tail; 
         return check.config;
     }
-    mdi.showMessageBoxSync({
+    rudi.showMessageBoxSync({
         message: "Option '" + check.option + "' is required for " + commandType + " actions.",
         type: "warning",
         title: "  Missing Option Value"
@@ -196,24 +196,24 @@ const getConfig = function(commandType, extra){
 sshConnectButton.addEventListener('click', function(event) {
     const config = getConfig('ssh', true);
     if(!config) return;
-    mdi.sshConnect(config);
+    rudi.sshConnect(config);
     xterm.focus();
 });
 sshDisconnectButton.addEventListener('click', function(event) {
     const config = getConfig('ssh', false);
     if(!config) return;
-    mdi.sshDisconnect();
+    rudi.sshDisconnect();
     xterm.focus();
 });
-/* ---  approve MDI installation, per installation target --- */
+/* ---  approve installation, per installation target --- */
 const approvedInstallationsKey = "approved-installations";
 const installServer = function(config){
-    mdi.installServer(config);
+    rudi.installServer(config);
     xterm.focus();      
 }
-mdi.confirmInstall((event, result) => {
+rudi.confirmInstall((event, result) => {
     if(!result) return;
-    const config = getConfig('mdi', 'install');
+    const config = getConfig('rudi', 'install');
     const installationKey = getInstallationKey(config);
     let approvedInstallations = JSON.parse(localStorage.getItem(approvedInstallationsKey));
     approvedInstallations[installationKey] = true;
@@ -224,16 +224,16 @@ const getInstallationKey = function(config){
     let installationKey = config.mode == "Local" ?
         [
             config.mode,
-            config.options.regular.mdiDirectoryLocal
+            config.options.regular.rudiDirectoryLocal
         ] : [
             config.mode,
             config.options.regular.serverDomain, 
-            config.options.regular.mdiDirectoryRemote
+            config.options.regular.rudiDirectoryRemote
         ];
     return installationKey.join("\n");
 }
 installServerButton.addEventListener('click', function(event) {
-    const config = getConfig('mdi', 'install');
+    const config = getConfig('rudi', 'install');
     if(!config) return;    
     let approvedInstallations = localStorage.getItem(approvedInstallationsKey);
     if(approvedInstallations) {
@@ -244,27 +244,27 @@ installServerButton.addEventListener('click', function(event) {
     }
     const installationKey = getInstallationKey(config);
     if(approvedInstallations[installationKey]) return installServer(config);
-    mdi.showMessageBoxSync({
-        message: "This action will use R to install the MDI server at:\n\n" + 
+    rudi.showMessageBoxSync({
+        message: "This action will use R to install the server at:\n\n" + 
                   installationKey + "\n\n" + 
                  "Click 'Confirm' to continue.",
         type: "question",
         title: "  Confirm Server Installation",
         buttons: ["Cancel", "Confirm"],
         noLink: true,
-        mdiEvent: "confirmInstall"
+        rudiEvent: "confirmInstall"
     });
 });
 /* ---  server start/stop (approved by prior installation) --- */
 startServerButton.addEventListener('click', function(event) {
-    const config = getConfig('mdi', 'run');
+    const config = getConfig('rudi', 'run');
     if(!config) return;
-    mdi.startServer(config);
+    rudi.startServer(config);
 });
 stopServerButton.addEventListener('click', function(event) {
-    const config = getConfig('mdi', 'run');
+    const config = getConfig('rudi', 'run');
     if(!config) return;
-    mdi.stopServer(config);
+    rudi.stopServer(config);
     xterm.focus();
 });
 /* ---  approve terminal open --- */
@@ -272,16 +272,16 @@ const terminalApprovalKey = "terminal-is-approved";
 const spawnTerminal = function(){
     const config = getConfig('ssh', false);
     if(!config) return;
-    mdi.spawnTerminal(config);        
+    rudi.spawnTerminal(config);        
 }
-mdi.confirmTerminal((event, result) => {
+rudi.confirmTerminal((event, result) => {
     if(!result) return;
     localStorage.setItem(terminalApprovalKey, true);
     spawnTerminal();
 });
 spawnTerminalButton.addEventListener('click', function(event) {
     if(localStorage.getItem(terminalApprovalKey)) return spawnTerminal();
-    mdi.showMessageBoxSync({
+    rudi.showMessageBoxSync({
         message: "This action will open an external Terminal window on your computer.\n\n" + 
                  "The window will not be part of the Desktop and must be closed separately.\n\n" + 
                  "Click 'Confirm' to continue.",
@@ -289,7 +289,7 @@ spawnTerminalButton.addEventListener('click', function(event) {
         title: "  Confirm Terminal Open",
         buttons: ["Cancel", "Confirm"],
         noLink: true,
-        mdiEvent: "confirmTerminal"
+        rudiEvent: "confirmTerminal"
     });
 });
 
@@ -302,7 +302,7 @@ const fileOptionInputs = document.getElementsByClassName('fileOptionInput');
 for (const fileOptionInput of fileOptionInputs) {
     const elements = fileOptionInput.children;
     elements[1].addEventListener('click', async () => {
-        const filePath = await mdi.getLocalFile({
+        const filePath = await rudi.getLocalFile({
             defaultPath: elements[0].value || elements[1].dataset.default,
             type: elements[1].dataset.type
         });
@@ -341,7 +341,7 @@ for (const optionForm of optionForms){ // listen to the form to catch input chan
 
 // control the available options based on server mode
 const setServerMode = function(mode, suppressWorking){
-    mdi.setTitle(mode)
+    rudi.setTitle(mode)
     for (const configOption of configOptions) {
         configOption.style.display = configOption.classList.contains(mode) ? "block" : "none";
     }
@@ -376,7 +376,7 @@ toggleAdvanced.addEventListener('click', function(){
     resizePanelHeights();
 });
 
-// server mode, i.e., where the mdi-apps-framework will run
+// server mode, i.e., where the apps framework will run
 const modeRadios = document.serverMode.mode;
 for (const modeRadio of modeRadios) {
     modeRadio.addEventListener('change', function(){
@@ -387,7 +387,7 @@ for (const modeRadio of modeRadios) {
 
 // save/load user-defined configurations, i.e., Presets, from localStorage
 const presetSelect = document.getElementById('preset');
-const presetsKey = "mdi-desktop-presets";
+const presetsKey = "rudi-desktop-presets";
 const restrictedPresets = ["defaults", "mostRecent", "working"];
 const defaultPreset = { // for quickest creation of a config for UM Great Lakes remote mode
     mode: "Local",
@@ -397,18 +397,14 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             serverDomain: "greatlakes.arc-ts.umich.edu",
             clusterAccount: "",
             jobTimeMinutes: 120,
-            mdiDirectoryRemote: "~/mdi",
-            mdiDirectoryLocal: "~/mdi",
-            rLoadCommand: "",
-            rscriptPath: "",
+            rudiDirectoryRemote: "~/rudi",
+            rudiDirectoryLocal: "~/rudi",
             developer: false
         },
         advanced:{
             identityFile: "",            
             dataDirectoryRemote: "",
             dataDirectoryLocal: "",
-            hostDirectoryRemote: "",
-            hostDirectoryLocal: "",
             cpusPerTask: 2,
             memPerCpu: "4g",
             quickStart: false
@@ -472,7 +468,7 @@ const savePresetAs = document.getElementById("savePresetAs");
 const deletePreset = document.getElementById("deletePreset");
 savePresetAs.addEventListener("click", function(){
     const current = presetSelect.value;
-    mdi.showPrompt({
+    rudi.showPrompt({
         title: 'Enter Configuration Name',
         label: 'Please enter the desired configuration name:',
         value: restrictedPresets.includes(current) ? "" : current,
@@ -486,10 +482,10 @@ savePresetAs.addEventListener("click", function(){
         height: 200,
         width: 400,
         alwaysOnTop: true,
-        mdiEvent: "configurationName"
+        rudiEvent: "configurationName"
     });
 });
-mdi.configurationName((event, result) => {
+rudi.configurationName((event, result) => {
     presets[result] = presets[presetSelect.value];
     savePresets();
     updatePresets();
@@ -498,16 +494,16 @@ mdi.configurationName((event, result) => {
 deletePreset.addEventListener("click", function(){
     const current = presetSelect.value;
     if(restrictedPresets.includes(current)) return;    
-    mdi.showMessageBoxSync({
+    rudi.showMessageBoxSync({
         message: "Please confirm deletion of configuration '" + current + "'. This cannot be undone.",
         type: "warning",
         title: "  Confirm Deletion",
         buttons: ["Cancel", "Delete"],
         noLink: true,
-        mdiEvent: "confirmDelete"
+        rudiEvent: "confirmDelete"
     });
 });
-mdi.confirmDelete((event, result) => {
+rudi.confirmDelete((event, result) => {
     if(!result) return; // user clicked cancel  
     delete presets[presetSelect.value];
     savePresets();
@@ -525,10 +521,10 @@ const setConnectedTitle = function(){
     const active = serverState.connected || serverState.listening;
     const connection = !active ? null : {
         server: config.mode == "Local" ? 
-          opt.regular.mdiDirectoryLocal :
-          opt.regular.serverDomain + ":" + opt.regular.mdiDirectoryRemote
+          opt.regular.rudiDirectoryLocal :
+          opt.regular.serverDomain + ":" + opt.regular.rudiDirectoryRemote
     };
-    mdi.setTitle(config.mode, connection);
+    rudi.setTitle(config.mode, connection);
 }
 const disableWhenConnected = [
     "preset", // inputs required to make remote connections, i.e., before server is started
@@ -546,14 +542,14 @@ const disableConnectedInputs = function(){
         }
     }    
 }
-mdi.connectedState((event, data) => { 
+rudi.connectedState((event, data) => { 
     serverState.connected = data.connected;
     setButtonsVisibility();
     if(serverState.connected) savePresets(true);
     setConnectedTitle();
     disableConnectedInputs();
 });
-mdi.listeningState((event, match, data) => { 
+rudi.listeningState((event, match, data) => { 
     serverState.listening = data.listening;
     setButtonsVisibility();
     if(serverState.listening){
@@ -563,19 +559,19 @@ mdi.listeningState((event, match, data) => {
             "http://" + match.match(/\S+:\d+/)[0]:
             match.match(/http:\/\/.+:\d+/)[0];
         const proxyRules = isNode ? 
-            "socks5://127.0.0.1:" + data.mdiPort : 
+            "socks5://127.0.0.1:" + data.serverPort : 
             null;
         clearAddedTabs();
         addTabDiv();
         activeTabIndex = 1;
         setTimeout(() => {
             xterm.write("\n\rplease wait a moment for the page to load\n\r");
-            mdi.showFrameworkContents(url, proxyRules);
+            rudi.showFrameworkContents(url, proxyRules);
             if(serverPanelWorkingWidth > 0 && // auto-hide server panel unless developing
                !data.developer) toggleServerPanel();
         }, isNode ? 5000 : 0); // since node mode hits its signal before the server initializes
     } else {
-        mdi.clearFrameworkContents(); 
+        rudi.clearFrameworkContents(); 
         if(serverPanelWorkingWidth == 0) toggleServerPanel();
         clearAddedTabs();
         activeTabIndex = 0;
@@ -591,14 +587,14 @@ const refreshContents = document.getElementById('contents-refresh');
 const contentsBack = document.getElementById('contents-back');
 const addTab = document.getElementById('add-tab');
 const contentsTabs = document.getElementById('contents-tabs')
-refreshContents.addEventListener("click", () => mdi.refreshContents());
-contentsBack.addEventListener("click", () => mdi.contentsBack(serverState.listening));
+refreshContents.addEventListener("click", () => rudi.refreshContents());
+contentsBack.addEventListener("click", () => rudi.contentsBack(serverState.listening));
 let nTabs = 1; // the actual number of current tabs
 let tabCounter = 1; // accumulates over all tabs ever opened
 let activeTabIndex = 0; // the docs tab
 const setActiveTab = function(tabIndex){ 
     activeTabIndex = tabIndex;
-    mdi.selectTab(activeTabIndex);  
+    rudi.selectTab(activeTabIndex);  
     for(const tab of contentsTabs.children) {
         if(parseInt(tab.dataset.index) === activeTabIndex) tab.classList.add('active-tab') 
         else tab.classList.remove('active-tab') 
@@ -617,7 +613,7 @@ const addTabListener = function(tab){ // listen for both tab select and close on
         if(event.target.classList.contains("contents-tab")){ // a tab select event
             setActiveTab(tabIndex);
         } else { // a tab close event
-            mdi.closeTab(tabIndex);
+            rudi.closeTab(tabIndex);
             contentsTabs.children[tabIndex].remove();
             nTabs--; 
             let i = 0;
@@ -630,7 +626,7 @@ const addTabListener = function(tab){ // listen for both tab select and close on
         event.target.blur();
     });
 };
-addTabListener(document.getElementById('mdi-docs-tab')); // initialize the first, permanenent tab
+addTabListener(document.getElementById('rudi-docs-tab')); // initialize the first, permanenent tab
 const addTabDiv = function(tabName){
     nTabs++; 
     tabCounter++;
@@ -652,14 +648,14 @@ const addTabDiv = function(tabName){
     addTab.blur();
 };
 addTab.addEventListener("click", () => { // add a new tab
-    mdi.addTab(window.innerHeight, window.innerWidth);    
+    rudi.addTab(window.innerHeight, window.innerWidth);    
     addTabDiv();
 });
 launchExternalTab.addEventListener("click", () => { // open the current pane in an external browser
-    if(allowExternalTab) mdi.launchExternalTab(serverState.listening);
+    if(allowExternalTab) rudi.launchExternalTab(serverState.listening);
 });
-mdi.showDocumentation((event, url) => { setActiveTab(0) });
-mdi.showExternalLink((event, tabName, tabIndex, addTab) => { 
+rudi.showDocumentation((event, url) => { setActiveTab(0) });
+rudi.showExternalLink((event, tabName, tabIndex, addTab) => { 
   if(addTab) addTabDiv(tabName);
   setActiveTab(tabIndex);
 });

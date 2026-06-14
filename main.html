@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
-    <title>MDI</title>
+    <title>RuDI</title>
     <link href="main.css" rel="stylesheet" />
     <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css" />
     <link href="assets/font-awesome/css/fontawesome.min.css" rel="stylesheet">
@@ -11,7 +11,7 @@
   </head>
   <body>
 
-    <!-- configure, install, and connect to an MDI apps server -->
+    <!-- configure, install, and connect to a backend server -->
     <div id="server-panel">
       <div id="server-config">
 
@@ -22,15 +22,12 @@
               <td class="optionLabel">Configuration</td>
               <td class="optionInput">
                 <select name="preset" id="preset">
-                  <option value="defaults">Defaults</option>                  
-                  <option value="mostRecent" selected>Most Recent</option>                  
+                  <option value="defaults">Defaults</option>
+                  <option value="mostRecent" selected>Most Recent</option>
                   <option value="working">Working</option>
                 </select>
                 <a id="savePresetAs" class="action-hyperlink" href="#">Save As</a>
                 <a id="deletePreset" class="action-hyperlink" href="#">Delete</a>
-                <!-- TODO: implement import and export of presets
-                <a id="exportPreset" class="action-hyperlink" href="#">Import</a>
-                <a id="importPreset" class="action-hyperlink" href="#">Export</a>
                 -->
               </td>
             </tr>
@@ -38,11 +35,11 @@
         </form>
         <hr>
 
-        <!-- server mode, i.e., where the mdi-apps-framework will run -->
+        <!-- server mode, i.e., where the backend server will run -->
         <form name="serverMode">
           <table>
             <tr>
-              <td class="optionLabel">MDI Server Mode</td>
+              <td class="optionLabel">Server Mode</td>
               <td class="optionInput">
                 <div id="serverModes">
                   <input type="radio" id="local" name="mode" value="Local" checked>
@@ -58,7 +55,7 @@
         </form>
         <hr>
 
-        <!-- common/required mode-specific options for MDI servers -->
+        <!-- common/required mode-specific options for servers -->
         <form id="regularOptions" data-type="regular" class="optionsForm">
           <table>
 
@@ -80,33 +77,20 @@
               <td class="optionInput"><input name="jobTimeMinutes" type="number" value="120" placeholder="e.g., 120 (in minutes)"></td>
             </tr>
 
-            <!-- MDI directories -->
+            <!-- directories -->
             <tr class="config-option Remote Node">
-              <td class="optionLabel">** MDI Directory</td>
-              <td class="optionInput"><input name="mdiDirectoryRemote" type="text" value="~/mdi" placeholder="e.g., ~/mdi"></td>
+              <td class="optionLabel">** RuDI Directory</td>
+              <td class="optionInput"><input name="rudiDirectoryRemote" type="text" value="~/rudi" placeholder="e.g., ~/rudi"></td>
             </tr>
             <tr class="config-option Local">
-              <td class="optionLabel">** MDI Directory</td>
+              <td class="optionLabel">** RuDI Directory</td>
               <td class="fileOptionInput">
-                <input name="mdiDirectoryLocal" type="text" value="~/mdi" placeholder="e.g., ~/mdi">
+                <input name="rudiDirectoryLocal" type="text" value="~/rudi" placeholder="e.g., ~/rudi">
                 <a class="get-file-link" data-type="directory">Search</a>
               </td>
             </tr>
 
-            <!-- R executable -->
-            <tr class="config-option Remote Node">
-              <td class="optionLabel">R Load Command</td>
-              <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.2.0"></td>
-            </tr>
-            <tr class="config-option Local">
-              <td class="optionLabel">Rscript Path</td>
-              <td class="fileOptionInput">
-                <input name="rscriptPath" type="text" value="" placeholder="e.g., C:\Program Files\R\R-4.2.0\bin\Rscript.exe">
-                <a class="get-file-link" data-type="file" data-default="rscriptPathDefault">Search</a>
-              </td>
-            </tr>
-
-            <!-- MDI run options -->
+            <!-- run options -->
             <tr class="config-option Remote Node Local">
               <td class="optionLabel">Developer Mode</td>
               <td class="optionInput">
@@ -117,7 +101,7 @@
           </table>  
         </form>
 
-        <!-- advanced/defaulted mode-specific options for MDI servers -->
+        <!-- advanced/defaulted mode-specific options for servers -->
         <form id="advancedOptions" data-type="advanced" class="optionsForm">
           <!-- <hr> -->
           <table>
@@ -131,7 +115,7 @@
               </td>
             </tr>
 
-            <!-- more MDI directories -->
+            <!-- more directories -->
             <tr class="config-option Remote Node">
               <td class="optionLabel">Data Directory</td>
               <td class="optionInput"><input name="dataDirectoryRemote" type="text" value="" placeholder="see documentation for details"></td>
@@ -140,17 +124,6 @@
               <td class="optionLabel">Data Directory</td>
               <td class="fileOptionInput">
                 <input name="dataDirectoryLocal" type="text" value="" placeholder="see documentation for details">
-                <a class="get-file-link" data-type="directory">Search</a>
-              </td>
-            </tr>
-            <tr class="config-option Remote Node">
-              <td class="optionLabel">Host Directory</td>
-              <td class="optionInput"><input name="hostDirectoryRemote" type="text" value="" placeholder="see documentation for details"></td>
-            </tr>
-            <tr class="config-option Local">
-              <td class="optionLabel">Host Directory</td>
-              <td class="fileOptionInput">
-                <input name="hostDirectoryLocal" type="text" value="" placeholder="see documentation for details">
                 <a class="get-file-link" data-type="directory">Search</a>
               </td>
             </tr>
@@ -165,17 +138,9 @@
               <td class="optionInput"><input name="memPerCpu" type="text" value="4g" placeholder="e.g., 4g (recommended)"
                 "></td>
             </tr>
-
-            <!-- MDI run options -->
-            <tr class="config-option Local"> <!-- TODO: enable for remote mode in remote-server.R -->
-              <td class="optionLabel">Quick Start</td>
-              <td class="optionInput">
-                <input name="quickStart" type="checkbox" value="quickStart">
-              </td>
-            </tr>
-          </table>  
+          </table>
         </form>
-        <hr>        
+        <hr>
 
         <!-- the main server action buttons -->
         <div class="buttons">
@@ -184,13 +149,12 @@
           <button type="button" id="install-server">(Re)Install</button>
           <button type="button" id="start-server">Start</button>
           <button type="button" id="stop-server">Stop</button>
-          <a href="#" id="spawn-terminal" class="terminal-hyperlink">Terminal</a>
           <a href="#" id="copy-terminal-selected" class="terminal-hyperlink">Copy</a>
         </div>
         <hr id="buttons-hr">
       </div>
 
-      <!-- the in-app node-pty pseudo-terminal that runs the mdi-remote server -->
+      <!-- the in-app node-pty pseudo-terminal that runs the remote server -->
       <div id="terminal"></div>
     </div>
 
@@ -199,7 +163,7 @@
 
     <!-- a wide div that contains the BrowserView tab controls --> 
     <div id="contents-tab-controls">
-      <div id="contents-refresh" class="tab-control-link"><i class="fas fa-rotate-right"></i></div><div id="contents-back" class="tab-control-link"><i class="fas fa-arrow-left"></i></div><div id="contents-tabs"><div id="mdi-docs-tab" class="contents-tab active-tab" data-index="0">Docs</div></div><div id="launch-external-tab" class="tab-control-link"><i class="fas fa-arrow-up-right-from-square"></i></div><div id="add-tab" class="tab-control-link"><i class="fas fa-plus"></i></div>
+      <div id="contents-refresh" class="tab-control-link"><i class="fas fa-rotate-right"></i></div><div id="contents-back" class="tab-control-link"><i class="fas fa-arrow-left"></i></div><div id="contents-tabs"><div id="rudi-docs-tab" class="contents-tab active-tab" data-index="0">Docs</div></div><div id="launch-external-tab" class="tab-control-link"><i class="fas fa-arrow-up-right-from-square"></i></div><div id="add-tab" class="tab-control-link"><i class="fas fa-plus"></i></div>
     </div>
 
     <!-- finish up page html and load external scripts -->

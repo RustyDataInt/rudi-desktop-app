@@ -72,7 +72,7 @@ body {
     white-space: nowrap;
     background-color: #dfdfdf;
 }
-.contents-tab:first-of-type, #mdi-docs-tab, #contents-back {
+.contents-tab:first-of-type, #rudi-docs-tab, #contents-back {
     border-left: 1px solid #888; 
 }
 #contents-tabs {

@@ -6,7 +6,7 @@ nav_order: 50
 
 ## {{ page.title }}
 
-The MDI Desktop saves configuration states on your computer 
+The RudI Desktop saves configuration states on your computer 
 for fast access to the same servers on return visits. Three 
 saved states are always available, others you create and manage.
 

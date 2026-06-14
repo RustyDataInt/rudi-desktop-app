@@ -7,8 +7,8 @@ nav_order: 30
 
 ## {{page.title}}
 
-The MDI Desktop App makes it easy to to connect
-to a remote HPC server, like UM Great Lakes. Simply 
+The RuDI Desktop App makes it easy to to connect
+to a remote HPC server. Simply 
 provide a valid user login and server address.
 
 ### Username **
@@ -21,11 +21,11 @@ the server as this user.
 ### Server Domain **
 
 Provide the complete domain name (but nothing else)
-for the remote computer that will serve this installation of the MDI.
+for the remote computer that will serve this RuDI installation.
 
 **Examples**
 - greatlakes.arc-ts.umich.edu
-- my-mdi.io
+- my-rudi.io
 
 ### Identify Key File (advanced)
 

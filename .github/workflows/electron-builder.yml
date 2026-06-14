@@ -1,4 +1,4 @@
-# GitHub Action to publish mdi-desktop-app _draft_ releases
+# GitHub Action to publish desktop app _draft_ releases
 # must manually make the release public on GitHub!!
 name: "Electron Builder"
 on:
