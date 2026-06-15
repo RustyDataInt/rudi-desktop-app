@@ -9,7 +9,7 @@ const allowedEventTypes = [
     "showDocumentation"
 ];
 contextBridge.exposeInMainWorld('rudiElectron', {
-    frameworkToElectron: (eventType, data) => {
+    appToElectron: (eventType, data) => {
         if(allowedEventTypes.includes(eventType)) 
             ipcRenderer.send(eventType, data)
     }

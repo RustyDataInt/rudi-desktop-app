@@ -103,11 +103,10 @@ const sshDisconnectButton = document.getElementById('ssh-disconnect');
 const installServerButton = document.getElementById('install-server');
 const startServerButton   = document.getElementById('start-server');
 const stopServerButton    = document.getElementById('stop-server');
-const spawnTerminalButton = document.getElementById('spawn-terminal');
 const buttonsHr = document.getElementById('buttons-hr');
 let serverState = {
     connected: false, // whether an ssh connection has been established
-    listening: false, // whether the apps framework is running
+    listening: false, // whether the server backend is running
     nButtons: 0
 };
 const setButtonVisibility = function(button, isVisible){
@@ -130,7 +129,6 @@ const setButtonsVisibility = function(){
     setButtonVisibility(installServerButton, isConnected && installIsReady && !serverState.listening);
     setButtonVisibility(startServerButton,   isConnected && runIsReady && !serverState.listening);
     setButtonVisibility(stopServerButton,    isConnected && serverState.listening);
-    setButtonVisibility(spawnTerminalButton, terminalIsReady);
     setButtonVisibility(terminalCopy,        terminalIsReady && xtermSelected);
     buttonsHr.style.display = serverState.nButtons > 0 ? "block" : "none";
     allowExternalTab = !serverState.listening || config.mode !== "Node";
@@ -267,31 +265,6 @@ stopServerButton.addEventListener('click', function(event) {
     rudi.stopServer(config);
     xterm.focus();
 });
-/* ---  approve terminal open --- */
-const terminalApprovalKey = "terminal-is-approved";
-const spawnTerminal = function(){
-    const config = getConfig('ssh', false);
-    if(!config) return;
-    rudi.spawnTerminal(config);        
-}
-rudi.confirmTerminal((event, result) => {
-    if(!result) return;
-    localStorage.setItem(terminalApprovalKey, true);
-    spawnTerminal();
-});
-spawnTerminalButton.addEventListener('click', function(event) {
-    if(localStorage.getItem(terminalApprovalKey)) return spawnTerminal();
-    rudi.showMessageBoxSync({
-        message: "This action will open an external Terminal window on your computer.\n\n" + 
-                 "The window will not be part of the Desktop and must be closed separately.\n\n" + 
-                 "Click 'Confirm' to continue.",
-        type: "question",
-        title: "  Confirm Terminal Open",
-        buttons: ["Cancel", "Confirm"],
-        noLink: true,
-        rudiEvent: "confirmTerminal"
-    });
-});
 
 /* -----------------------------------------------------------
 activate dynamic server configuration inputs (initialized in upside-down fashion)
@@ -376,7 +349,7 @@ toggleAdvanced.addEventListener('click', function(){
     resizePanelHeights();
 });
 
-// server mode, i.e., where the apps framework will run
+// server mode, i.e., where apps will run
 const modeRadios = document.serverMode.mode;
 for (const modeRadio of modeRadios) {
     modeRadio.addEventListener('change', function(){
@@ -514,7 +487,7 @@ rudi.confirmDelete((event, result) => {
 /* -----------------------------------------------------------
 respond to data stream watches and other pty state events
 ----------------------------------------------------------- */
-const iframe = document.getElementById("embedded-apps-framework");
+const iframe = document.getElementById("embedded-apps");
 const setConnectedTitle = function(){
     const config = presets[presetSelect.value];
     const opt = config.options;
@@ -566,12 +539,12 @@ rudi.listeningState((event, match, data) => {
         activeTabIndex = 1;
         setTimeout(() => {
             xterm.write("\n\rplease wait a moment for the page to load\n\r");
-            rudi.showFrameworkContents(url, proxyRules);
+            rudi.showAppContents(url, proxyRules);
             if(serverPanelWorkingWidth > 0 && // auto-hide server panel unless developing
                !data.developer) toggleServerPanel();
         }, isNode ? 5000 : 0); // since node mode hits its signal before the server initializes
     } else {
-        rudi.clearFrameworkContents(); 
+        rudi.clearAppContents(); 
         if(serverPanelWorkingWidth == 0) toggleServerPanel();
         clearAddedTabs();
         activeTabIndex = 0;

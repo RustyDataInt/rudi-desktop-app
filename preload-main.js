@@ -17,7 +17,6 @@ contextBridge.exposeInMainWorld('rudi', {
 
   // enable error and message dialogs via Electron dialog:showMessageBoxSync and electron-prompt
   showMessageBoxSync: (options) => ipcRenderer.send('showMessageBoxSync', options),
-  confirmTerminal: (result) => ipcRenderer.on('confirmTerminal', result),
   confirmInstall: (result) => ipcRenderer.on('confirmInstall', result),
   confirmDelete: (result) => ipcRenderer.on('confirmDelete', result),
   showPrompt: (options) => ipcRenderer.send("showPrompt", options),
@@ -45,8 +44,8 @@ contextBridge.exposeInMainWorld('rudi', {
   },
   sshDisconnect: () => ipcRenderer.send('sshDisconnect'),
 
-  // install and run the frameworks on the remote server
-  // these actions are always required to launch the apps framework
+  // install and run the backend on the remote server
+  // these actions are always required to launch apps
   installServer: (config) => {
     const rudi = assembleRudiCommand(config, 'install');
     ipcRenderer.send('installServer', rudi);
@@ -59,26 +58,20 @@ contextBridge.exposeInMainWorld('rudi', {
     ipcRenderer.send('stopServer', config.mode);
   },
 
-  // launch a host terminal external to the electron app with an interactive ssh session 
-  spawnTerminal: (config) => {
-    const sshCommand = config.mode == "Local" ? "" : assembleSshCommand(config, false);
-    ipcRenderer.send('spawnTerminal', sshCommand)
-  },
-
   // respond to data stream watches and other pty state events
   connectedState: (data) => ipcRenderer.on('connectedState', data),
   listeningState: (match, data) => ipcRenderer.on('listeningState', match, data),
 
   // load content into the content BrowserView, contents BrowserView tab controls
-  showFrameworkContents: (url, proxyRules) => ipcRenderer.send('showFrameworkContents', url, proxyRules),
-  clearFrameworkContents: () => ipcRenderer.send('clearFrameworkContents'),
+  showAppContents: (url, proxyRules) => ipcRenderer.send('showAppContents', url, proxyRules),
+  clearAppContents: () => ipcRenderer.send('clearAppContents'),
   refreshContents: () => ipcRenderer.send('refreshContents'),
   contentsBack: (listening) => ipcRenderer.send('contentsBack', listening),
   launchExternalTab: (listening) => ipcRenderer.send('launchExternalTab', listening),
   addTab: (viewportHeight, viewportWidth) => ipcRenderer.send('addTab', viewportHeight, viewportWidth),
   selectTab: (tabIndex) => ipcRenderer.send('selectTab', tabIndex),
   closeTab: (tabIndex) => ipcRenderer.send('closeTab', tabIndex),
-  showDocumentation: (url) => ipcRenderer.on('showDocumentation', url), // in response to apps framework
+  showDocumentation: (url) => ipcRenderer.on('showDocumentation', url), // in response to apps
   showExternalLink: (tabName, tabIndex, addTab) => ipcRenderer.on('showExternalLink', tabName, tabIndex, addTab) // in response to external a links in content views
 });
 
@@ -110,8 +103,6 @@ const assembleSshCommand = (config, createTunnel) => {
 
 /* -----------------------------------------------------------
 parse the server config options into proper commands
-R function signatures are found here:
-  https://rustydataint.github.io/rudi-manager/docs/actions/00_index.html
 ----------------------------------------------------------- */
 const assembleRudiCommand = (config, action) => {
   const opt = structuredClone(config.options);
@@ -147,20 +138,18 @@ const assembleRemoteInstall = function(opt){ // does _not_ depend on remote mode
     mode: "Remote",
     opt: opt,
     commands: [
-      opt.rLoadCommand,
       "export SUPPRESS_RUDI_BASHRC=TRUE",
       ["if [ ! -d", opt.rudiDir, "]; then mkdir -p", opt.rudiDir, "; fi"].join(" "),
       "cd " + opt.rudiDir,
       "if [ ! -e install.sh ]; then git clone https://github.com/RustyDataInt/rudi.git .; fi",
       "if [ ! -e rudi ]; then ./install.sh; fi",
-      "./rudi install --install-packages --n-cpu 4 " + opt.forksFlag
+      "./rudi install " + opt.forksFlag
     ]    
   };
 }
-const parseRemoteInstallOptions = function(opt){ // convert user inputs into values suitable for passing to mdi::install
+const parseRemoteInstallOptions = function(opt){ // convert user inputs into values suitable for passing to install
   opt.rudiDir = opt.regular.rudiDirectoryRemote;
   opt.forksFlag = opt.regular.developer ? "--forks" : "";
-  opt.rLoadCommand = opt.regular.rLoadCommand ? opt.regular.rLoadCommand : "echo";
   return opt;
 }
 const assembleRemoteRun = function(opt){ // run command when server mode == remote
@@ -170,14 +159,13 @@ const assembleRemoteRun = function(opt){ // run command when server mode == remo
     opt: opt,
     command: [
       // the call to the remote target script
-      "bash", 
+      "sh", 
       opt.remoteTarget,
       // arguments required by the target script
       "__serverPort__", // R Shiny port, used in local port forward and R process on login node
       opt.rudiDir,
       opt.dataDirectory,
       opt.developer,
-      opt.rLoadCommand,
       opt.regular.serverDomain
     ]
   };
@@ -189,12 +177,10 @@ const assembleNodeRun = function(opt){ // run command when server mode == node
     opt: opt,
     command: [
       // the call to the remote target script
-      "bash", 
+      "sh", 
       opt.remoteTarget,
       // arguments required by the target script
       "__serverPort__", // proxy port, used in dynamic port forward, for reporting only 
-      opt.rLoadCommand,
-      "__serverPort__", // R Shiny port, used by R server in worker node process
       opt.rudiDir,
       opt.dataDirectory,
       opt.developer,
@@ -211,6 +197,5 @@ const parseRemoteRunOptions = function(opt){ // convert user inputs into values 
   opt.remoteTarget = opt.rudiDir + "/remote/" + (opt.isNode ? "rudi-remote-node" : "rudi-remote-server") + ".sh";
   opt.dataDirectory = opt.advanced.dataDirectoryRemote || "NULL";
   opt.developer = opt.regular.developer.toString().toUpperCase();
-  opt.rLoadCommand = opt.regular.rLoadCommand ? opt.regular.rLoadCommand.replace(/ /g, "~~") : "echo";
   return opt;
 }

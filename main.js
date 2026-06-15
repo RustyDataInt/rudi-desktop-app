@@ -45,13 +45,13 @@ let tabContents = {
     url: desktopAppHelpUrl,
     proxyRules: "direct://"
   },
-  framework: {  // the same for all active framework tabs
+  app: {  // the same for all active app tabs
     url: desktopAppHelpUrl,
     proxyRules: "direct://"
   }
 };
 let externalTabIndex = {}; // for external sites
-let activeTabIndex = 0; // where 0 = docs, 1 = first framework tab
+let activeTabIndex = 0; // where 0 = docs, 1 = first app tab
 const showDelay = 1000;
 const maxRetries = 10;
 let retryCount = 0;
@@ -134,7 +134,7 @@ const addContentView = function(contents, external, viewportHeight, viewportWidt
     width: viewportWidth - x,        
     y: bodyBorderWidth + tabControlsHeight, 
     height: viewportHeight - bodyBorderWidth - tabControlsHeight    
-  } : mainWindow.getBrowserViews()[0].getBounds(); // framework tabs inherit size from the permanent docs tab
+  } : mainWindow.getBrowserViews()[0].getBounds(); // app tabs inherit size from the permanent docs tab
   const contentView = new BrowserView({
     webPreferences: {
       preload: path.join(__dirname, 'preload-content.js'),
@@ -208,17 +208,17 @@ ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPan
     });
   }
 });
-ipcMain.on("showFrameworkContents", (event, url, proxyRules) => { // initialize a new framework contents state
+ipcMain.on("showAppContents", (event, url, proxyRules) => { // initialize a new app contents state
   if(!proxyRules) proxyRules = "direct://";
-  tabContents.framework = { // set the content metadata for this and all sister tabs
+  tabContents.app = { // set the content metadata for this and all sister tabs
     url: url,
     proxyRules: proxyRules
   };  
   activeTabIndex = 1;  
-  addContentView(tabContents.framework);
+  addContentView(tabContents.app);
 });
-ipcMain.on("clearFrameworkContents", (event) => {
-  const tabs = mainWindow.getBrowserViews(); // remove all framework tabs
+ipcMain.on("clearAppContents", (event) => {
+  const tabs = mainWindow.getBrowserViews(); // remove all app tabs
   if(tabs.length > 1) for(let i = tabs.length - 1; i > 0; i--) mainWindow.removeBrowserView(tabs[i])
   showDocumentation(desktopAppHelpUrl);
 });
@@ -226,13 +226,13 @@ ipcMain.on("refreshContents", (event) => {
   getActiveTab().webContents.reload();
 });
 ipcMain.on("contentsBack", (event, listening) => {
-  if(activeTabIndex === 0 || // don't support back button on apps-framework tabs
+  if(activeTabIndex === 0 || // don't support back button on app tabs
      !listening ||
      Object.values(externalTabIndex).includes(activeTabIndex)
   ) getActiveTab().webContents.goBack();
 });
 ipcMain.on("launchExternalTab", (event, listening) => {
-  const url = activeTabIndex == 0 || !listening ? tabContents.Docs.url : tabContents.framework.url;
+  const url = activeTabIndex == 0 || !listening ? tabContents.Docs.url : tabContents.app.url;
   if(confirmExternalUrl(url)) shell.openExternal(url + (
     listening && activeTabIndex > 0 ? 
     "?rudiRemoteKey=" + rudiRemoteKey() :
@@ -241,7 +241,7 @@ ipcMain.on("launchExternalTab", (event, listening) => {
 });
 ipcMain.on("addTab", (event, viewportHeight, viewportWidth) => {
   activeTabIndex = mainWindow.getBrowserViews().length;
-  addContentView(tabContents.framework);
+  addContentView(tabContents.app);
 });
 ipcMain.on("selectTab", (event, tabIndex) => {
   activeTabIndex = tabIndex;
@@ -354,7 +354,7 @@ const activateAppSshTerminal = function(){
   });
 
   // install and run commands on the local or remote server on user request
-  // these actions are always required to launch the apps framework
+  // these actions are always required to launch apps
   ipcMain.on('installServer', (event, rudi) => {
     if(rudi.mode == "Local"){ // parse local command here due to OS dependency
       console.log("pending");
@@ -415,7 +415,7 @@ const activateAppSshTerminal = function(){
       //   ptyProcess.write(command.join(" ") + "\r");        
       // }).catch(() => {});
     } else { // remote modes sent as a command sequence set by preload-main.js
-      ptyProcess.write("export RUDI_IS_ELECTRON=TRUE\r"); // let apps framework known they are running in Electron
+      ptyProcess.write("export RUDI_IS_ELECTRON=TRUE\r"); // let apps known they are running in Electron
       ptyProcess.write("export RUDI_REMOTE_KEY=" + rudiRemoteKey() + "\r");
       let command = rudi.command.join(" ") + "\r";
       ptyProcess.write(command.replaceAll("__serverPort__", serverPort));
@@ -480,7 +480,7 @@ const parseRudiPath = (rudi) => new Promise((resolve, reject) => {
 });
 
 /* -----------------------------------------------------------
-handle IPC from apps framework to Electron
+handle IPC from apps to Electron
 ----------------------------------------------------------- */
 const allowedExternalUrls = { // exert explicit control over the external sites we support
   Docs:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.io\//, // all other urls/targets are ignored  

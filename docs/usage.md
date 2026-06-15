@@ -31,8 +31,8 @@ awaiting input.
 ### Start and use the server
 
 Once RuDI is installed, click **Start** to launch the 
-Apps Framework, which will load into a web browser on the right
-side of the app.
+apps backend server, which will load into a web browser 
+on the right side of the Desktop.
 
 Notice the **tall vertical open/close button** in the middle or to the
 left of the screen. This button toggles the visibility of the server
@@ -44,9 +44,8 @@ start with one Docs and one Apps tab. If desired, you can open
 additional Apps tabs running on the same server. Documentation links
 within the apps will load into the Docs tab.
 
-Please see the documentation of the 
-[RuDI Apps Framework](/rudi-apps-framework)
-for information on how to proceed once the interface is running.
+In general, you will proceed from here by selecting and app,
+uploading data, and continuing to follow the app's workflow.
 
 ### Stop the server and disconnect
 
