@@ -157,11 +157,14 @@ const rudiRequiredOptions = function(config, action){
             clusterAccount: isNodeRun,
             jobTimeMinutes: isNodeRun,
             rudiDirectoryRemote: !isLocal,
-            rudiDirectoryLocal: isLocal
+            rudiDirectoryLocal: isLocal,
+            toolSuiteRemote: !isLocal,
+            toolSuiteLocal: isLocal
         },
         advanced: {                 
             cpusPerTask: isNodeRun,
-            memPerCpu: isNodeRun
+            memPerCpu: isNodeRun,
+            dioxusContainer: !isLocal
         }
     }   
 }
@@ -329,6 +332,9 @@ const setServerMode = function(mode, suppressWorking){
             const value = config[optionType][option];
             if(input.type === "checkbox"){
                 input.checked = value;
+                if(option === "developer") {
+                    input.disabled = mode === "Local";
+                }
             } else {
                 input.value = value || "";
             }
@@ -372,15 +378,20 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             jobTimeMinutes: 120,
             rudiDirectoryRemote: "~/rudi",
             rudiDirectoryLocal: "~/rudi",
+            rudiDirectoryRemote: "~/rudi",
+            rudiDirectoryLocal: "~/rudi",
+            toolSuiteRemote: "",
+            toolSuiteLocal: "",
             developer: false
         },
         advanced:{
-            identityFile: "",            
+            identityFile: "",
             dataDirectoryRemote: "",
             dataDirectoryLocal: "",
             cpusPerTask: 2,
             memPerCpu: "4g",
-            quickStart: false
+            quickStart: false,
+            dioxusContainer: "rust-1.92.0-dx-0.7.9"
         }
     }
 };
@@ -401,6 +412,23 @@ if(!presets) {
     savePresets();
 } else {
     presets = JSON.parse(presets);
+    for(const presetName of Object.keys(presets)) {
+        const preset = presets[presetName];
+        if(!preset.options) preset.options = structuredClone(defaultPreset.options);
+        for(const optionType of ['regular', 'advanced']) {
+            if(!preset.options[optionType]) {
+                preset.options[optionType] = structuredClone(defaultPreset.options[optionType]);
+            } else {
+                // Merge any missing options from defaults
+                for(const option of Object.keys(defaultPreset.options[optionType])) {
+                    if(preset.options[optionType][option] === undefined) {
+                        preset.options[optionType][option] = defaultPreset.options[optionType][option];
+                    }
+                }
+            }
+        }
+    }
+    savePresets(); // Save the merged presets back to localStorage
 }
 const updatePresets = function(){
     let current = [];

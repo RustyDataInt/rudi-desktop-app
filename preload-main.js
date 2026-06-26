@@ -120,8 +120,7 @@ commands in local mode - executed on the host machine
 ----------------------------------------------------------- */
 const assembleRudiLocal = function(opt){
   opt.rudiDir = opt.regular.rudiDirectoryLocal.replace(/\\/g, '/');
-  opt.dataDir = opt.advanced.dataDirectoryLocal.replace(/\\/g, '/') || "NULL";
-  opt.developer = opt.regular.developer.toString().toUpperCase();
+  opt.dataDir = opt.advanced.dataDirectoryLocal.replace(/\\/g, '/') || opt.rudiDir + "/data";
   opt.install = (!opt.advanced.quickStart).toString().toUpperCase();
   return {
     mode: "Local",
@@ -164,8 +163,10 @@ const assembleRemoteRun = function(opt){ // run command when server mode == remo
       // arguments required by the target script
       "__serverPort__", // R Shiny port, used in local port forward and R process on login node
       opt.rudiDir,
+      opt.toolSuite,
       opt.dataDirectory,
       opt.developer,
+      opt.dioxusContainer,
       opt.regular.serverDomain
     ]
   };
@@ -182,8 +183,10 @@ const assembleNodeRun = function(opt){ // run command when server mode == node
       // arguments required by the target script
       "__serverPort__", // proxy port, used in dynamic port forward, for reporting only 
       opt.rudiDir,
+      opt.toolSuite,
       opt.dataDirectory,
       opt.developer,
+      opt.dioxusContainer,
       opt.regular.clusterAccount,
       opt.regular.jobTimeMinutes,
       opt.advanced.cpusPerTask,
@@ -195,7 +198,9 @@ const assembleNodeRun = function(opt){ // run command when server mode == node
 const parseRemoteRunOptions = function(opt){ // convert user inputs into values suitable for passing to scripts
   opt.rudiDir = opt.regular.rudiDirectoryRemote;
   opt.remoteTarget = opt.rudiDir + "/remote/" + (opt.isNode ? "rudi-remote-node" : "rudi-remote-server") + ".sh";
-  opt.dataDirectory = opt.advanced.dataDirectoryRemote || "NULL";
+  opt.toolSuite = opt.regular.toolSuiteRemote || "USE_DEFAULT";
+  opt.dataDirectory = opt.advanced.dataDirectoryRemote || "USE_DEFAULT";
   opt.developer = opt.regular.developer.toString().toUpperCase();
+  opt.dioxusContainer = opt.advanced.dioxusContainer || "rust-1.92.0-dx-0.7.9";
   return opt;
 }
