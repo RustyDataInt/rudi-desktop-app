@@ -8,7 +8,7 @@ web content from node.js and other potential security exosures by maintaining
 contextIsolation:true, sandbox:true, and nodeIntegration:false in the client browser.
 ----------------------------------------------------------- */
 // dependencies required to load the main page
-const { app, BrowserWindow, BrowserView, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const net = require('net');
 app.commandLine.appendSwitch('disable-http-cache');
@@ -59,12 +59,7 @@ let retryCount = 0;
 const isWindows = process.platform.toLowerCase().startsWith("win");
 const shellCommand = isWindows ? 'powershell.exe' : 'zsh';
 let fsDelimiter = isWindows ? "\\" : "/";
-let watch = { // for watching node-pty data streams for triggering events
-  buffer: "",
-  for: "",
-  event: null,
-  data: undefined
-};
+let watchers = [];
 /* ----------------------------------------------------------- */
 let serverPort = 0; // used as both proxy and shiny ports depending on mode
 
@@ -118,24 +113,41 @@ const createMainWindow = () => {
 
   // load the app page that allows users to configure and launch their server
   mainWindow.loadFile('main.html').then(() => { // then load/activate additional contents into the app
-    addContentView(tabContents.Docs, false, startHeight, startWidth, contentsStartX); // the documentation tab (index = 0)
+    addTabView(tabContents.Docs, false, startHeight, startWidth, contentsStartX); // the documentation tab (index = 0)
     activateAppSshTerminal();
     if(isDev) mainWindow.webContents.openDevTools({ mode: "detach" });   
     activateAutoUpdater();
   });
+
+  // resize views with page
+  mainWindow.on('resize', () => {
+    if (!mainWindow || !mainWindow.contentView || mainWindow.contentView.children.length === 0) return;
+    const windowBounds = mainWindow.getBounds();
+    let tabBounds = mainWindow.contentView.children[0].getBounds();
+    tabBounds = {
+        x:      tabBounds.x,
+        width:  windowBounds.width - tabBounds.x - toggleButtonWidth,
+        y:      tabBounds.y, 
+        height: windowBounds.height - bodyBorderWidth - tabControlsHeight - 40
+    };
+    for (const tabView of mainWindow.contentView.children) {
+      tabView.setBounds(tabBounds);
+    }
+  });
 };
 
 /* -----------------------------------------------------------
-attach and fill BrowserViews with app contents, one or more tabs
+attach and fill views with app contents, one or more tabs
 ----------------------------------------------------------- */
-const addContentView = function(contents, external, viewportHeight, viewportWidth, x) {
+let tabMap = []; // relate tab index to contentView.webContents.id
+const addTabView = function(contents, external, viewportHeight, viewportWidth, x) {
   let bounds = viewportHeight ? {
-    x: x,
-    width: viewportWidth - x,        
-    y: bodyBorderWidth + tabControlsHeight, 
+    x:      x,
+    width:  viewportWidth - x,
+    y:      bodyBorderWidth + tabControlsHeight, 
     height: viewportHeight - bodyBorderWidth - tabControlsHeight    
-  } : mainWindow.getBrowserViews()[0].getBounds(); // app tabs inherit size from the permanent docs tab
-  const contentView = new BrowserView({
+  } : mainWindow.contentView.children[0].getBounds(); // app tabs all have the same bounds
+  const tabView = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, 'preload-content.js'),
       nodeIntegration: false, // security settings (defaults repeated here for clarity)
@@ -143,18 +155,15 @@ const addContentView = function(contents, external, viewportHeight, viewportWidt
       sandbox: true
     }
   });
-  mainWindow.addBrowserView(contentView); // not setBrowserView since we will support multiple tabs
+  mainWindow.contentView.addChildView(tabView);
+  tabMap.push(tabView.webContents.id); 
   // LEFT FOR REFERENCE: not preferred since demands target="_blank"; see externalLink action below
-  // contentView.webContents.setWindowOpenHandler(({ url }) => { 
+  // tabView.webContents.setWindowOpenHandler(({ url }) => { 
   //   shell.openExternal(url);   // redirect external web links to the user's default browser in the OS
   //   return { action: 'deny' }; // requires that link have target="_blank", all others do not hit here
   // });
-  contentView.setAutoResize({
-      width: true,
-      height: true
-  });
-  contentView.setBounds(bounds);
-  const ses = contentView.webContents.session;
+  tabView.setBounds(bounds);
+  const ses = tabView.webContents.session;
   ses.setProxy({
     proxyRules: contents.proxyRules,
     proxyBypassRules: "127.0.0.1,[::1],localhost"
@@ -166,7 +175,7 @@ const addContentView = function(contents, external, viewportHeight, viewportWidt
 const retryShowContents = (tabIndex, contents, external) => new Promise((resolve, reject) => { 
   retryCount++;
   if(isDev) console.log("attempt #" + retryCount + " to load " + contents.url + " via proxy " + contents.proxyRules);
-  const webContents = mainWindow.getBrowserViews()[tabIndex].webContents;
+  const webContents = mainWindow.contentView.children[tabIndex].webContents;
   if(external){
     webContents
       .loadFile("redirect.html", {query: {url: contents.url }})
@@ -186,20 +195,30 @@ const retryShowContents = (tabIndex, contents, external) => new Promise((resolve
 });
 
 /* -----------------------------------------------------------
-manage potentially mutiple BrowserView tabs
+manage potentially mutiple web content view tabs
 ----------------------------------------------------------- */
-const getActiveTab = function(){
-  return mainWindow.getBrowserViews()[activeTabIndex]
+const getActiveTabView = function(){
+  let tabMapId = tabMap[activeTabIndex];
+  for(const tabView of mainWindow.contentView.children){
+    if(tabView.webContents.id === tabMapId) return tabView;
+  }
+  return undefined;
 }
 const showActiveTab = function(){
   setTimeout(() => {
-    let tab = getActiveTab();
-    tab === undefined ? showActiveTab() : mainWindow.setTopBrowserView(getActiveTab())
+    let tabView = getActiveTabView();
+    // Calling addChildView on an existing view reorders it to the top.
+    // It does this by moving tab to the end of the children list.
+    if(tabView === undefined){
+      showActiveTab();
+    } else {
+      mainWindow.contentView.addChildView(tabView);
+    }
   }, 100);
 }
 ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPanelWidth) => {
   const x = serverPanelWidth + toggleButtonWidth - 2; // as above, don't know why the -2 is needed
-  for(const tab of mainWindow.getBrowserViews()){
+  for(const tab of mainWindow.contentView.children){
     tab.setBounds({ 
       x: x, 
       width: viewportWidth - x,         
@@ -208,28 +227,43 @@ ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPan
     });
   }
 });
+const clearAllButDocs1 = function(){
+  if (tabMap.length > 1) {
+    for (tabIndex = 1; tabIndex < tabMap.length; tabIndex++) { 
+      let tabViewId = tabMap[tabIndex];
+      for(const tabView of mainWindow.contentView.children){
+        if(tabView.webContents.id === tabViewId) {
+          tabView.webContents.session.closeAllConnections().then(() => {
+            mainWindow.contentView.removeChildView(tabView);
+          });
+        }
+      }
+    }
+    tabMap.splice(1); 
+  }
+}
 ipcMain.on("showAppContents", (event, url, proxyRules) => { // initialize a new app contents state
   if(!proxyRules) proxyRules = "direct://";
   tabContents.app = { // set the content metadata for this and all sister tabs
     url: url,
     proxyRules: proxyRules
-  };  
-  activeTabIndex = 1;  
-  addContentView(tabContents.app);
+  };
+  clearAllButDocs1();
+  activeTabIndex = 1;
+  addTabView(tabContents.app);
 });
 ipcMain.on("clearAppContents", (event) => {
-  const tabs = mainWindow.getBrowserViews(); // remove all app tabs
-  if(tabs.length > 1) for(let i = tabs.length - 1; i > 0; i--) mainWindow.removeBrowserView(tabs[i])
-  showDocumentation(desktopAppHelpUrl);
+  clearAllButDocs1();
+  // mainWindow.contentView.children[0].webContents.loadUrl(desktopAppHelpUrl);
 });
 ipcMain.on("refreshContents", (event) => {
-  getActiveTab().webContents.reload();
+  getActiveTabView().webContents.reload();
 });
 ipcMain.on("contentsBack", (event, listening) => {
-  if(activeTabIndex === 0 || // don't support back button on app tabs
-     !listening ||
+  if(!listening ||
+     activeTabIndex === 0 || // don't support back button on app tabs
      Object.values(externalTabIndex).includes(activeTabIndex)
-  ) getActiveTab().webContents.goBack();
+  ) getActiveTabView().webContents.goBack();
 });
 ipcMain.on("launchExternalTab", (event, listening) => {
   const url = activeTabIndex == 0 || !listening ? tabContents.Docs.url : tabContents.app.url;
@@ -240,16 +274,28 @@ ipcMain.on("launchExternalTab", (event, listening) => {
   ));
 });
 ipcMain.on("addTab", (event, viewportHeight, viewportWidth) => {
-  activeTabIndex = mainWindow.getBrowserViews().length;
-  addContentView(tabContents.app);
+  activeTabIndex = mainWindow.contentView.children.length;
+  addTabView(tabContents.app);
 });
 ipcMain.on("selectTab", (event, tabIndex) => {
   activeTabIndex = tabIndex;
   showActiveTab();
 });
 ipcMain.on("closeTab", (event, tabIndex) => {
-  if(activeTabIndex >= tabIndex) activeTabIndex = tabIndex - 1;
-  mainWindow.removeBrowserView(mainWindow.getBrowserViews()[tabIndex])
+  let tabViewId = tabMap[tabIndex];
+  for(const tabView of mainWindow.contentView.children){
+    if(tabView.webContents.id === tabViewId) {
+      tabView.webContents.session.closeAllConnections().then(() => {
+        mainWindow.contentView.removeChildView(tabView);
+      });
+    }
+  }
+  tabMap.splice(tabIndex, 1); 
+  if(activeTabIndex > tabIndex){
+    activeTabIndex--;
+  } else if(activeTabIndex === tabIndex){
+    activeTabIndex = Math.min(tabIndex, mainWindow.contentView.children.length - 1);
+  }
   showActiveTab();
   for(tab of Object.keys(externalTabIndex)){
     if(externalTabIndex[tab] == tabIndex){
@@ -321,18 +367,15 @@ const activateAppSshTerminal = function(){
   ipcMain.on('xtermToPty',  (event, data) => ptyProcess.write(data));
   const lineClearRegex = /\x1b\[K\s+/; // https://notes.burke.libbey.me/ansi-escape-codes/
   ptyProcess.onData(data => {
-    if(watch.for && // monitor the stream for signals of interest
-      !data.match(lineClearRegex)) { // ignoring lines with the ANSI escape code that says to clear a line from the buffer
-      watch.buffer += data;
-      const match = watch.buffer.match(watch.for);
-      if(match){
-        mainWindow.webContents.send(watch.event, match[0], watch.data);        
-        watch = { // stop watching after the signal hits
-          buffer: "",
-          for: "",
-          event: null,
-          data: undefined
-        };
+    if(watchers.length > 0 && !data.match(lineClearRegex)) {
+      for(let i = watchers.length - 1; i >= 0; i--) {
+        const watcher = watchers[i];
+        watcher.buffer += data;
+        const match = watcher.buffer.match(watcher.for);
+        if(match) {
+          mainWindow.webContents.send(watcher.event, match[0], watcher.data);
+          watchers.splice(i, 1); // remove this watcher after it triggers
+        }
       }
     }
     mainWindow.webContents.send('ptyToXterm', data);
@@ -381,19 +424,26 @@ const activateAppSshTerminal = function(){
     }
   });  
   ipcMain.on('startServer', (event, rudi) => {
-    watch = {
-      buffer: "",
-      for: rudi.mode == "Node" ?
-        /\nRuDI server running on host port .+:\d+/ :
-        /\nListening on http:\/\/.+:\d+/,
-      event: "listeningState",
-      data: { // passed for use by renderer.js
-        listening: true,
-        developer: rudi.opt.regular.developer, // logical
-        mode: rudi.mode,
-        serverPort: serverPort
+    watchers = [
+      {
+        buffer: "",
+        for: /\nApp server running on host port .+:\d+/,
+        event: "nodeHost",
+        data: {}
+      },
+      {
+        buffer: "",
+        // for: /INFO Build completed successfully in .+ launching app!/,
+        for: /Serving your app: .+!/,
+        event: "listeningState",
+        data: {
+          listening: true,
+          developer: rudi.opt.regular.developer, // logical
+          mode: rudi.mode,
+          serverPort: serverPort
+        }
       }
-    };
+    ]; 
     if(rudi.mode == "Local"){ // parse local command here due to OS dependency
       console.log("pending");
       // parseRudiPath(rudi).then((rudi) => {
@@ -421,15 +471,35 @@ const activateAppSshTerminal = function(){
       ptyProcess.write(command.replaceAll("__serverPort__", serverPort));
     }
   });  
+  const stopServer = function(mode){
+    ptyProcess.write(
+      mode === "Local" ? 
+      '\x03' :  // SIGNIT, Ctrl-C, ^C, ASCII 3
+      // "\rquit\r" // key sequence to kill a server in remote-<server|node>.sh
+      "\x03\rquit\r" // key sequence to kill a server in remote-<server|node>.sh
+    );
+    mainWindow.webContents.send("listeningState", null, {listening: false});    
+  }
   ipcMain.on('stopServer', (event, mode) => {
-    getActiveTab().webContents.session.closeAllConnections().then(() => {
-      ptyProcess.write(
-        mode === "Local" ? 
-        '\x03' :  // SIGNIT, Ctrl-C, ^C, ASCII 3
-        "\rquit\r" // key sequence to kill a server in remote-<server|node>.sh
-      );
-      mainWindow.webContents.send("listeningState", null, {listening: false});      
-    });
+    clearAllButDocs1();
+    stopServer(mode);
+    // const closePromises = [];
+    // if (tabMap.length > 1) {
+    //   for (let i = 1; i < tabMap.length; i++) {
+    //     const tabViewId = tabMap[i];
+    //     for (const tabView of mainWindow.contentView.children) {
+    //       if (tabView.webContents.id === tabViewId) {
+    //         closePromises.push(tabView.webContents.session.closeAllConnections());
+    //         break;
+    //       }
+    //     }
+    //   }
+    //   Promise.all(closePromises).then(() => {
+    //     stopServer(mode);
+    //   });
+    // } else {
+    //   stopServer(mode);
+    // }
   });  
 }
 
@@ -524,8 +594,8 @@ ipcMain.on("externalLink", (event, data) => {
           mainWindow.webContents.send('showExternalLink', tab, activeTabIndex, false);
         }).catch(console.error);
       } else { // first instance of a new external target
-        activeTabIndex = mainWindow.getBrowserViews().length;
-        addContentView(tabContents[tab], true);
+        activeTabIndex = mainWindow.contentView.children.length;
+        addTabView(tabContents[tab], true);
         externalTabIndex[tab] = activeTabIndex;
         mainWindow.webContents.send('showExternalLink', tab, activeTabIndex, true);
       }

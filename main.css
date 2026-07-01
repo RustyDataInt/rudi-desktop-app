@@ -4,7 +4,7 @@ three app panels define the main page:
     server-panel
     server-panel-toggle
     contents-tab-controls
-plus a set of stacked BrowserViews for content display
+plus a set of stacked web content views for content display
 ----------------------------------------------------------- */
 body {
     position: relative;
@@ -61,7 +61,7 @@ body {
     color: #006;
 }
 
-/* tab control panel for the content BrowserViews */
+/* tab control panel for the web content views */
 #contents-tab-controls {
     left: 624px;
     height: 30px;

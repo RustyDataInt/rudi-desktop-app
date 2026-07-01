@@ -61,8 +61,9 @@ contextBridge.exposeInMainWorld('rudi', {
   // respond to data stream watches and other pty state events
   connectedState: (data) => ipcRenderer.on('connectedState', data),
   listeningState: (match, data) => ipcRenderer.on('listeningState', match, data),
+  nodeHost: (match, data) => ipcRenderer.on('nodeHost', match, data),
 
-  // load content into the content BrowserView, contents BrowserView tab controls
+  // load content into the web content views, content view tab controls
   showAppContents: (url, proxyRules) => ipcRenderer.send('showAppContents', url, proxyRules),
   clearAppContents: () => ipcRenderer.send('clearAppContents'),
   refreshContents: () => ipcRenderer.send('refreshContents'),
@@ -166,8 +167,10 @@ const assembleRemoteRun = function(opt){ // run command when server mode == remo
       opt.toolSuite,
       opt.dataDirectory,
       opt.developer,
-      opt.dioxusContainer,
-      opt.regular.serverDomain
+      opt.dioxusVersion,
+      opt.regular.serverDomain,
+      opt.fastTempDir,
+      opt.cargoHome
     ]
   };
 }
@@ -186,21 +189,25 @@ const assembleNodeRun = function(opt){ // run command when server mode == node
       opt.toolSuite,
       opt.dataDirectory,
       opt.developer,
-      opt.dioxusContainer,
+      opt.dioxusVersion,
       opt.regular.clusterAccount,
       opt.regular.jobTimeMinutes,
       opt.advanced.cpusPerTask,
       opt.advanced.memPerCpu,
-      opt.regular.serverDomain
+      opt.regular.serverDomain,
+      opt.fastTempDir,
+      opt.cargoHome
     ]
   };
 }
 const parseRemoteRunOptions = function(opt){ // convert user inputs into values suitable for passing to scripts
   opt.rudiDir = opt.regular.rudiDirectoryRemote;
-  opt.remoteTarget = opt.rudiDir + "/remote/" + (opt.isNode ? "rudi-remote-node" : "rudi-remote-server") + ".sh";
+  opt.remoteTarget = opt.rudiDir + "/remote/" + (opt.isNode ? "remote-node" : "remote-server") + ".sh";
   opt.toolSuite = opt.regular.toolSuiteRemote || "USE_DEFAULT";
   opt.dataDirectory = opt.advanced.dataDirectoryRemote || "USE_DEFAULT";
   opt.developer = opt.regular.developer.toString().toUpperCase();
-  opt.dioxusContainer = opt.advanced.dioxusContainer || "rust-1.92.0-dx-0.7.9";
+  opt.dioxusVersion = opt.advanced.dioxusVersion || "rust-1.92.0-dx-0.7.9";
+  opt.fastTempDir = opt.advanced.fastTempDir || "NULL";
+  opt.cargoHome = opt.advanced.cargoHome || "USE_DEFAULT";
   return opt;
 }

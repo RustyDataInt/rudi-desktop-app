@@ -173,9 +173,21 @@
 
             <!-- developer options -->
             <tr class="config-option Remote Node">
-              <td class="optionLabel">Dioxus Container</td>
+              <td class="optionLabel">Dioxus Version</td>
               <td class="optionInput">
-                <input name="dioxusContainer" type="text" value="latest" placeholder="e.g., rust-1.92.0-dx-0.7.9">
+                <input name="dioxusVersion" type="text" value="rust-1.92.0-dx-0.7.9" placeholder="e.g., rust-1.92.0-dx-0.7.9">
+              </td>
+            </tr>
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">Fast Tmp Directory</td>
+              <td class="optionInput">
+                <input name="fastTempDir" type="text" value="" placeholder="optional full path to fast temporary directory, e.g., /tmpssd">
+              </td>
+            </tr>
+            <tr class="config-option Remote Node NotFast">
+              <td class="optionLabel">Cargo Home</td>
+              <td class="optionInput">
+                <input name="cargoHome" type="text" value="" placeholder="optional full path to cargo home, e.g., /my/cargo_home">
               </td>
             </tr>
           </table>
@@ -201,9 +213,23 @@
     <!-- a tall vertical button for toggling the visibility of the server-panel --> 
     <button id="server-panel-toggle">&#9668;</button>
 
-    <!-- a wide div that contains the BrowserView tab controls --> 
+    <!-- a wide div that contains the content tab controls --> 
     <div id="contents-tab-controls">
-      <div id="contents-refresh" class="tab-control-link"><i class="fas fa-rotate-right"></i></div><div id="contents-back" class="tab-control-link"><i class="fas fa-arrow-left"></i></div><div id="contents-tabs"><div id="rudi-docs-tab" class="contents-tab active-tab" data-index="0">Docs</div></div><div id="launch-external-tab" class="tab-control-link"><i class="fas fa-arrow-up-right-from-square"></i></div><div id="add-tab" class="tab-control-link"><i class="fas fa-plus"></i></div>
+      <div id="contents-refresh" class="tab-control-link">
+        <i class="fas fa-rotate-right"></i>
+      </div>
+      <div id="contents-back" class="tab-control-link">
+        <i class="fas fa-arrow-left"></i>
+      </div>
+      <div id="contents-tabs">
+        <div id="rudi-docs-tab" class="contents-tab active-tab" data-index="0">Docs</div>
+      </div>
+      <div id="launch-external-tab" class="tab-control-link">
+        <i class="fas fa-arrow-up-right-from-square"></i>
+      </div>
+      <div id="add-tab" class="tab-control-link">
+        <i class="fas fa-plus"></i>
+      </div>
     </div>
 
     <!-- finish up page html and load external scripts -->

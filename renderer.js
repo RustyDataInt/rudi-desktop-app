@@ -158,13 +158,13 @@ const rudiRequiredOptions = function(config, action){
             jobTimeMinutes: isNodeRun,
             rudiDirectoryRemote: !isLocal,
             rudiDirectoryLocal: isLocal,
-            toolSuiteRemote: !isLocal,
+            // toolSuiteRemote: !isLocal,
             toolSuiteLocal: isLocal
         },
-        advanced: {                 
+        advanced: {
             cpusPerTask: isNodeRun,
             memPerCpu: isNodeRun,
-            dioxusContainer: !isLocal
+            dioxusVersion: !isLocal
         }
     }   
 }
@@ -340,6 +340,7 @@ const setServerMode = function(mode, suppressWorking){
             }
         }
     }
+    updateCargoHomeDisabled();
     resizePanelHeights();
     presets.working.mode = mode;
     suppressWorking ? setButtonsVisibility() : commitWorkingChanges();
@@ -353,6 +354,16 @@ toggleAdvanced.addEventListener('click', function(){
     advancedAreVisible = !advancedAreVisible;
     advancedOptions.style.display = advancedAreVisible ? "block" : "none";
     resizePanelHeights();
+});
+const fastTempDir = document.querySelector('input[name="fastTempDir"]');
+const cargoHome = document.querySelector('input[name="cargoHome"]');
+const updateCargoHomeDisabled = function(){
+    fastTempDirValue = fastTempDir.value.trim();
+    cargoHome.disabled = fastTempDirValue ? true : false;
+}
+updateCargoHomeDisabled(); 
+fastTempDir.addEventListener('change', function(){
+    updateCargoHomeDisabled();
 });
 
 // server mode, i.e., where apps will run
@@ -391,7 +402,9 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             cpusPerTask: 2,
             memPerCpu: "4g",
             quickStart: false,
-            dioxusContainer: "rust-1.92.0-dx-0.7.9"
+            dioxusVersion: "rust-1.92.0-dx-0.7.9",
+            cargoHome: "",
+            fastTempDir: ""
         }
     }
 };
@@ -550,6 +563,10 @@ rudi.connectedState((event, data) => {
     setConnectedTitle();
     disableConnectedInputs();
 });
+let nodeHostUrl = "";
+rudi.nodeHost((event, match, data) => { 
+    nodeHostUrl = "http://" + match.match(/\S+:\d+/)[0];
+});
 rudi.listeningState((event, match, data) => { 
     serverState.listening = data.listening;
     setButtonsVisibility();
@@ -557,8 +574,8 @@ rudi.listeningState((event, match, data) => {
         savePresets(true);
         const isNode = data.mode == "Node";
         const url = isNode ? 
-            "http://" + match.match(/\S+:\d+/)[0]:
-            match.match(/http:\/\/.+:\d+/)[0];
+            nodeHostUrl :
+            "http://127.0.0.1:" + data.serverPort;
         const proxyRules = isNode ? 
             "socks5://127.0.0.1:" + data.serverPort : 
             null;
@@ -582,18 +599,19 @@ rudi.listeningState((event, match, data) => {
 });
 
 /* -----------------------------------------------------------
-contents BrowserView tab controls
+content view tab controls
 ----------------------------------------------------------- */
 const refreshContents = document.getElementById('contents-refresh');
 const contentsBack = document.getElementById('contents-back');
+const contentsTabs = document.getElementById('contents-tabs'); // launch-external-tab declared above
 const addTab = document.getElementById('add-tab');
-const contentsTabs = document.getElementById('contents-tabs')
 refreshContents.addEventListener("click", () => rudi.refreshContents());
 contentsBack.addEventListener("click", () => rudi.contentsBack(serverState.listening));
 let nTabs = 1; // the actual number of current tabs
 let tabCounter = 1; // accumulates over all tabs ever opened
 let activeTabIndex = 0; // the docs tab
 const setActiveTab = function(tabIndex){ 
+    if (activeTabIndex === tabIndex) return; // no change
     activeTabIndex = tabIndex;
     rudi.selectTab(activeTabIndex);  
     for(const tab of contentsTabs.children) {
@@ -649,7 +667,7 @@ const addTabDiv = function(tabName){
     addTab.blur();
 };
 addTab.addEventListener("click", () => { // add a new tab
-    rudi.addTab(window.innerHeight, window.innerWidth);    
+    rudi.addTab(window.innerHeight, window.innerWidth);
     addTabDiv();
 });
 launchExternalTab.addEventListener("click", () => { // open the current pane in an external browser
